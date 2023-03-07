@@ -45,7 +45,7 @@ export default function NFTModal({nft, owners, onCloseModal}: NFTModalProps) {
                     {
                         nft.rawMetadata.attributes?.map((trait: any, index: number) => (
                             <span key={index} className="inline-block bg-gray-200
-                                rounded-full px-3 py-2 text-sm font-semibold text-gray-700 mr-2">{trait['trait_type']}:{trait.value}
+                                rounded-full px-3 py-2 text-sm font-semibold text-gray-700 m-1">{trait['trait_type']}:{trait.value}
                             </span>
                         ))
                     }
@@ -58,7 +58,7 @@ export default function NFTModal({nft, owners, onCloseModal}: NFTModalProps) {
                         (
                             <>
                                 <label className='text-black text-base'>Owner: </label>
-                                <span key={index} className="inline-block bg-gray-200 rounded-full px-3 py-2 text-sm font-semibold text-gray-700 mr-2">{owner}</span>
+                                <span key={index} className="inline-block bg-gray-200 rounded-full px-3 py-2 text-sm font-semibold text-gray-700 m-1">{owner}</span>
                             </>
                         ))
                     }

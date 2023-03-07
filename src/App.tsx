@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {  useRef, useState } from 'react';
 import './App.css';
 import 'react-toastify/dist/ReactToastify.css';
 import CollectionSearch from './components/CollectionSearch';
@@ -8,6 +8,7 @@ import NFTModal from './components/NFTModal';
 import { isAddress } from "ethers";
 import {toast} from 'react-toastify';
 import { ErrorAlert } from './components/ErrorAlert';
+import Loading from './components/Loading';
 
 const settings = {
   apiKey: process.env.REACT_APP_ALCHEMY_API_KEY,
@@ -18,31 +19,41 @@ const alchemy = new Alchemy(settings);
 
 function App() {
   const [nfts, setNFTs] = useState<Nft[]>([]);
-  const [isLoading, setIsLoading] = useState(true)
-  const [address, setAddress] = useState('');
+  const [isLoading, setIsLoading] = useState(false)
   const [showModal, setShowModal] = useState(false);
   const [nftOwner, setNftOwner] = useState<string[]>([]);
   const [selectedNft, setSelectedNft] = useState<Nft>();
+  const [nftPageKey, setNftPageKey] = useState("0");
+  const [address, setAddress] = useState("");
+  const root = useRef(null);
 
   const searchCollection = (value: string) => {
-    setAddress(value);
     if(isAddress(value)) {
-      setIsLoading(false);
-      getNFTsFromAddress();
+      setAddress(value);
+      setNFTs([]);
+      setIsLoading(true);
+      getNFTsFromAddress(value);
     } else if(value != '') {
       toast.error("Invalid Collection Address")
     }
   }
 
-  const getNFTsFromAddress = async () => {
+  const getNFTsFromAddress = async (collection: string) => {
     try {
-      const nftList = await alchemy.nft.getNftsForContract(address)
+      const nftList = await alchemy.nft.getNftsForContract(collection, {
+        pageKey: nftPageKey
+      })
       if(nftList) {
-        setNFTs(nftList?.nfts);
+        setNFTs(nfts.concat(nftList?.nfts));
+        setNftPageKey((nfts.length + nftList?.nfts.length).toString());
       }
-    } catch (e) {
-      setNFTs([]);
-      toast.error(e as string);
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      let errorMessage = "Unknown Error";
+      if(error instanceof Error)
+        errorMessage = error.message;
+      toast.error(errorMessage);
     }
   }
 
@@ -55,8 +66,11 @@ function App() {
       );
       setNftOwner(metadata.owners)
       setShowModal(true);
-    } catch(e) {
-      toast.error(e as string);
+    } catch(error) {
+      let errorMessage = "Unknown Error";
+      if(error instanceof Error)
+        errorMessage = error.message;
+      toast.error(errorMessage);
     } 
   }
 
@@ -64,8 +78,13 @@ function App() {
     setShowModal(false);
   }
 
+  const loadMore = () => {
+    setIsLoading(true);
+    getNFTsFromAddress(address);
+  }
+
   return (
-    <div className="App App-header">
+    <div className="App App-header" ref={root}>
       <ErrorAlert />
       <CollectionSearch searchNFT={(value: string) => searchCollection(value)} />
       {
@@ -83,6 +102,22 @@ function App() {
           )
         }
       </div>
+      {
+        isLoading ?
+        <div className='mt-4'>
+          <Loading />
+        </div>
+        :
+        null
+      }
+      {
+        !isLoading && nfts.length > 0 ?
+        <button className="bg-blue-500 hover:bg-blue-700 text-white text-base font-bold py-2 px-4 rounded m-4" onClick={() => loadMore()}>
+          Load more NFTs
+        </button>
+        :
+        null
+      }
       {
         showModal ?
         <NFTModal key={selectedNft?.tokenId} nft={selectedNft} owners={nftOwner} onCloseModal={() => closeModal()}/>
